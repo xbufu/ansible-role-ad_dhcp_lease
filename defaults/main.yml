@@ -1,0 +1,7 @@
+---
+domain_pdc: pdc01
+domain_admin_user: 'AD01\Administrator'
+domain_admin_password: Password!
+dhcp_lease_ip: 192.168.91.69
+dhcp_hostname: '{{ ansible_facts.hostname }}'
+dhcp_scope_id: 192.168.91.0

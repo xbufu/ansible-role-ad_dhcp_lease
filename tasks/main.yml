@@ -1,0 +1,52 @@
+---
+- name: Create lease
+  vars:
+    ansible_user: '{{ domain_admin_user }}'
+    ansible_become_user: '{{ domain_admin_user }}'
+    ansible_password: '{{ domain_admin_password }}'
+  block:
+    - name: Make sure DHCP service is running
+      ansible.windows.win_service:
+        name: dhcpserver
+        state: started
+        start_mode: auto
+      delegate_to: '{{ domain_pdc }}'
+
+    - name: debug
+      debug: var=ansible_facts.fqdn
+
+    - name: Remove existing lease
+      community.windows.win_dhcp_lease:
+        mac: "{{ ansible_facts['interfaces'][0]['macaddress'] }}"
+        state: absent
+      delegate_to: '{{ domain_pdc }}'
+
+    - name: Create static lease
+      community.windows.win_dhcp_lease:
+        type: reservation
+        ip: '{{ dhcp_lease_ip }}'
+        scope_id: '{{ dhcp_scope_id }}'
+        mac: "{{ ansible_facts['interfaces'][0]['macaddress'] }}"
+        dns_hostname: '{{ dhcp_hostname }}'
+        description: '{{ dhcp_hostname }}'
+      delegate_to: '{{ domain_pdc }}'
+
+- name: Enable DHCP on network adapter
+  ansible.windows.win_shell: |
+    Get-NetAdapter | Remove-NetRoute -Confirm:$false -ErrorAction Ignore
+    Get-NetAdapter | Set-NetIPInterface -DHCP Enabled -Confirm:$false -ErrorAction Ignore
+    Get-NetAdapter | Set-DnsClientServerAddress -ResetServerAddresses -Confirm:$false -ErrorAction Ignore
+    ipconfig /release
+    ipconfig /renew
+  ignore_unreachable: true
+  poll: 0
+  async: 15
+
+- name: Update ansible host
+  ansible.builtin.set_fact:
+    ansible_host: '{{ dhcp_lease_ip }}'
+
+- name: Wait for connection
+  ansible.builtin.wait_for_connection:
+    delay: 20
+    timeout: 300

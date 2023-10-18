@@ -1,0 +1,17 @@
+---
+galaxy_info:
+  role_name: ad_dhcp_lease
+  author: xbufu
+  description: AD DHCP static lease role.
+  company: Bufu-Security
+  license: license (BSD, MIT)
+  min_ansible_version: "2.1"
+  platforms:
+    - name: Windows
+      versions: all
+
+  galaxy_tags:
+    - windows
+    - ad
+    - dhcp
+    - static_lease
